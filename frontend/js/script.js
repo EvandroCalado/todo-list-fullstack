@@ -1,10 +1,47 @@
 const tbody = document.querySelector('tbody');
+const addForm = document.querySelector('.add-form');
+const inputTask = document.querySelector('.input-task');
 
-const getTasks = async () => {
+const fetchTasks = async () => {
   const response = await fetch('http://localhost:3333/tasks');
   const data = await response.json();
 
   return data;
+};
+
+const addTask = async (e) => {
+  e.preventDefault();
+
+  const task = {
+    title: inputTask.value,
+  };
+
+  await fetch('http://localhost:3333/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(task),
+  });
+
+  loadTasks();
+  inputTask.value = '';
+};
+
+const deleteTask = async (id) => {
+  await fetch(`http://localhost:3333/tasks/${id}`, {
+    method: 'DELETE',
+  });
+
+  loadTasks();
+};
+
+const updateTask = async ({ id, title, status }) => {
+  await fetch(`http://localhost:3333/tasks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, status }),
+  });
+
+  loadTasks();
 };
 
 const createElement = (tag, innerText = '', innerHTML = '') => {
@@ -17,18 +54,27 @@ const createElement = (tag, innerText = '', innerHTML = '') => {
   if (innerHTML) {
     element.innerHTML = innerHTML;
   }
+
   return element;
 };
 
-const createSelect = () => {
+const createSelect = (value) => {
+  const options = `
+    <option value="pendente">Pendente</option>
+    <option value="em andamento">Em andamento</option>
+    <option value="concluida">Concluída</option>
+  `;
 
-}
+  const select = createElement('select', '', options);
+  select.value = value;
 
-const task = {
-  id: 7,
-  title: 'Estudar React',
-  created_at: '02 de Janeiro de 2023 15:00',
-  status: 'concluída',
+  return select;
+};
+
+const formatDate = (dateUTC) => {
+  const options = { dateStyle: 'long', timeStyle: 'short' };
+  const date = new Date(dateUTC).toLocaleString('pt-br', options);
+  return date;
 };
 
 const createTask = (task) => {
@@ -36,45 +82,54 @@ const createTask = (task) => {
 
   const tr = createElement('tr');
   const tdTitle = createElement('td', title);
-  const tdCreatedAt = createElement('td', created_at);
+  const tdCreatedAt = createElement('td', formatDate(created_at));
   const tdStatus = createElement('td');
-  const select = createElement('select');
-  select.value = status
-  const optionOne = createElement('option', 'Pendente');
-  optionOne.value = 'pendente'
-  const optionOTwo = createElement('option', 'Em Andamento');
-  optionOTwo.value = 'em andamento'
-  const optionTree = createElement('option', 'Concluida');
-  optionTree.value = 'concluida'
 
+  const select = createSelect(status);
   tdStatus.appendChild(select);
-  select.appendChild(optionOne);
-  select.appendChild(optionOTwo);
-  select.appendChild(optionTree);
+  select.addEventListener('change', ({ target }) =>
+    updateTask({ ...task, status: target.value })
+  );
 
   const tdActions = createElement('td');
-  const ButtonEdit = createElement(
+  const editButton = createElement(
     'button',
     '',
     '<i class="ri-pencil-line"></i>'
   );
-  ButtonEdit.classList.add('btn-action');
-  const ButtonDelete = createElement(
+  editButton.classList.add('btn-action');
+
+  const deleteButton = createElement(
     'button',
     '',
     '<i class="ri-delete-bin-line"></i>'
   );
-  ButtonDelete.classList.add('btn-action');
+  deleteButton.classList.add('btn-action');
+  deleteButton.addEventListener('click', () => {
+    deleteTask(id);
+  });
 
-  tdActions.appendChild(ButtonEdit);
-  tdActions.appendChild(ButtonDelete);
+  tdActions.appendChild(editButton);
+  tdActions.appendChild(deleteButton);
 
   tr.appendChild(tdTitle);
   tr.appendChild(tdCreatedAt);
   tr.appendChild(tdStatus);
   tr.appendChild(tdActions);
 
-  tbody.appendChild(tr);
+  return tr;
 };
 
-createTask(task);
+const loadTasks = async () => {
+  const tasks = await fetchTasks();
+  tbody.innerHTML = '';
+
+  tasks.map((task) => {
+    const tr = createTask(task);
+    tbody.appendChild(tr);
+  });
+};
+
+addForm.addEventListener('submit', addTask);
+
+loadTasks();
