@@ -44,6 +44,23 @@ const updateTask = async ({ id, title, status }) => {
   loadTasks();
 };
 
+const editTask = (tdTitle, title, id) => {
+  tdTitle.innerText = '';
+
+  const editForm = createElement('form');
+  const editInput = createElement('input');
+
+  editForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    updateTask({ id, title: editInput.value, status: 'pendente' });
+  });
+
+  editInput.value = title;
+  editForm.appendChild(editInput);
+  tdTitle.appendChild(editForm);
+};
+
 const createElement = (tag, innerText = '', innerHTML = '') => {
   const element = document.createElement(tag);
 
@@ -84,12 +101,8 @@ const createTask = (task) => {
   const tdTitle = createElement('td', title);
   const tdCreatedAt = createElement('td', formatDate(created_at));
   const tdStatus = createElement('td');
-
   const select = createSelect(status);
   tdStatus.appendChild(select);
-  select.addEventListener('change', ({ target }) =>
-    updateTask({ ...task, status: target.value })
-  );
 
   const tdActions = createElement('td');
   const editButton = createElement(
@@ -105,9 +118,6 @@ const createTask = (task) => {
     '<i class="ri-delete-bin-line"></i>'
   );
   deleteButton.classList.add('btn-action');
-  deleteButton.addEventListener('click', () => {
-    deleteTask(id);
-  });
 
   tdActions.appendChild(editButton);
   tdActions.appendChild(deleteButton);
@@ -116,6 +126,22 @@ const createTask = (task) => {
   tr.appendChild(tdCreatedAt);
   tr.appendChild(tdStatus);
   tr.appendChild(tdActions);
+
+  if (status === 'concluida') {
+    tdTitle.classList.add('done');
+  }
+
+  select.addEventListener('change', ({ target }) =>
+    updateTask({ ...task, status: target.value })
+  );
+
+  editButton.addEventListener('click', () =>
+    editTask(tdTitle, title, id, status)
+  );
+
+  deleteButton.addEventListener('click', () => {
+    deleteTask(id);
+  });
 
   return tr;
 };

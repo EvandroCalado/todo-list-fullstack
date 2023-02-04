@@ -113,3 +113,7 @@ select:hover {
 .btn-action:nth-child(2) {
   background-color: #ff0000;
 }
+
+.done {
+  text-decoration: line-through;
+}
